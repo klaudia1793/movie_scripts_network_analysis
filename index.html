@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOUND (1996) — Analiza Sieci Społecznej</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Share+Tech+Mono&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0608;
+    --bg2:       #120d10;
+    --bg3:       #1c141a;
+    --panel:     #160e14;
+    --border:    #3d2535;
+    --crimson:   #9b1c3a;
+    --rose:      #c42a52;
+    --gold:      #c8944a;
+    --ivory:     #e8ddd0;
+    --muted:     #7a6570;
+    --comm0:     #c42a52;   /* Corky — scarlet */
+    --comm1:     #3a7abf;   /* Violet/Caesar mob — cold blue */
+    --comm2:     #4a9e6a;   /* periphery — jade */
+    --font-head: 'Playfair Display', serif;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-body: 'Cormorant Garamond', serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ivory);
+    font-family: var(--font-body);
+    font-size: 16px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRAIN OVERLAY */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: 0.35;
+  }
+
+  header {
+    padding: 2.5rem 3rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-end; gap: 2rem;
+    position: relative;
+  }
+  header::after {
+    content: '';
+    position: absolute; bottom: -2px; left: 3rem; right: 3rem;
+    height: 1px; background: linear-gradient(90deg, var(--crimson), transparent);
+  }
+
+  .title-block { flex: 1; }
+  .title-block h1 {
+    font-family: var(--font-head);
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--ivory) 40%, var(--gold));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .title-block .sub {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-top: 0.4rem;
+  }
+
+  .header-stats {
+    display: flex; gap: 2rem;
+  }
+  .hstat { text-align: center; }
+  .hstat .val {
+    font-family: var(--font-mono);
+    font-size: 1.6rem;
+    color: var(--rose);
+    line-height: 1;
+  }
+  .hstat .lbl {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+  }
+
+  /* LAYOUT */
+  .workspace {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    grid-template-rows: 560px 1fr;
+    gap: 0;
+    height: calc(100vh - 120px);
+    min-height: 560px;
+  }
+
+  /* CANVAS */
+  #graph-area {
+    grid-row: 1 / 3;
+    position: relative;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+  #graph-canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+  #graph-canvas:active { cursor: grabbing; }
+
+  .graph-overlay {
+    position: absolute; bottom: 1.2rem; left: 1.2rem;
+    display: flex; gap: 0.6rem; flex-wrap: wrap;
+  }
+  .mode-btn {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    padding: 0.35rem 0.8rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mode-btn:hover, .mode-btn.active {
+    border-color: var(--rose);
+    color: var(--ivory);
+    background: var(--bg3);
+  }
+
+  .legend {
+    position: absolute; top: 1rem; left: 1rem;
+    display: flex; flex-direction: column; gap: 0.35rem;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex; flex-direction: column;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .tab {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    padding: 0.7rem 0.9rem;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    flex: 1; text-align: center;
+  }
+  .tab:hover { color: var(--ivory); }
+  .tab.active { color: var(--rose); border-bottom-color: var(--rose); }
+
+  .panel-content {
+    flex: 1; overflow-y: auto; padding: 1rem;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .panel-content::-webkit-scrollbar { width: 4px; }
+  .panel-content::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* NODE CARD */
+  #node-card { display: none; }
+  #node-card.visible { display: block; }
+  .node-card-name {
+    font-family: var(--font-head);
+    font-size: 1.5rem;
+    font-style: italic;
+    margin-bottom: 0.8rem;
+    line-height: 1.1;
+  }
+  .metric-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono); font-size: 0.72rem;
+  }
+  .metric-row .mk { color: var(--muted); letter-spacing: 0.08em; }
+  .metric-row .mv { color: var(--gold); }
+  .comm-badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    border-radius: 2px;
+    margin-top: 0.7rem;
+  }
+  .bridge-tag {
+    margin-top: 0.6rem;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+  }
+  .bridge-tag::before { content: '⬡ '; }
+
+  /* RANKING TABLE */
+  .rank-table { width: 100%; border-collapse: collapse; }
+  .rank-table th {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    color: var(--muted); letter-spacing: 0.12em;
+    text-align: left; padding: 0.3rem 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .rank-table td {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    padding: 0.35rem 0.4rem;
+    border-bottom: 1px solid rgba(61,37,53,0.4);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .rank-table tr:hover td { background: var(--bg3); }
+  .rank-table td.name { color: var(--ivory); }
+  .rank-table td.val { color: var(--gold); text-align: right; }
+  .rank-num { color: var(--crimson); font-size: 0.58rem; }
+
+  .bar-cell { position: relative; }
+  .bar-fill {
+    position: absolute; left: 0; top: 30%; height: 40%;
+    background: var(--crimson); opacity: 0.35;
+    border-radius: 1px;
+    transition: width 0.3s;
+  }
+  .bar-text { position: relative; z-index: 1; }
+
+  /* COMMUNITY SECTION */
+  .comm-section { margin-bottom: 1.4rem; }
+  .comm-header {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .comm-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+  .comm-name {
+    font-family: var(--font-head); font-style: italic; font-size: 1rem;
+  }
+  .comm-size {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    color: var(--muted); letter-spacing: 0.1em; margin-left: auto;
+  }
+  .comm-members {
+    display: flex; flex-wrap: wrap; gap: 0.35rem;
+  }
+  .comm-pill {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .comm-pill:hover { opacity: 0.75; }
+  .comm-desc {
+    font-family: var(--font-body); font-size: 0.8rem;
+    color: var(--muted); line-height: 1.5;
+    margin-top: 0.5rem; font-style: italic;
+  }
+
+  /* BRIDGES */
+  .bridge-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono); font-size: 0.68rem;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .bridge-nodes { color: var(--ivory); }
+  .bridge-weight { color: var(--gold); }
+  .bridge-cross {
+    font-size: 0.6rem; color: var(--crimson); letter-spacing: 0.1em;
+  }
+
+  /* BOTTOM PANEL — INTERPRETATION */
+  .interp-panel {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 1.4rem;
+    overflow-y: auto;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .interp-panel::-webkit-scrollbar { width: 4px; }
+  .interp-panel::-webkit-scrollbar-thumb { background: var(--border); }
+  .interp-panel h2 {
+    font-family: var(--font-head); font-style: italic;
+    font-size: 1.1rem; color: var(--gold);
+    margin-bottom: 0.8rem;
+    letter-spacing: 0.02em;
+  }
+  .interp-panel p {
+    font-family: var(--font-body); font-size: 0.82rem;
+    line-height: 1.65; color: var(--muted);
+    margin-bottom: 0.7rem;
+  }
+  .interp-panel p strong {
+    color: var(--ivory); font-weight: 400; font-style: italic;
+  }
+
+  /* TOOLTIP */
+  #tooltip {
+    position: fixed; pointer-events: none;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 0.4rem 0.7rem;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    color: var(--ivory);
+    z-index: 1000;
+    display: none;
+    letter-spacing: 0.05em;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  }
+
+  /* DEFAULT HINT */
+  #default-hint {
+    padding: 1rem 0;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    color: var(--muted); letter-spacing: 0.08em;
+    text-align: center; line-height: 1.8;
+  }
+
+  @media (max-width: 900px) {
+    .workspace { grid-template-columns: 1fr; grid-template-rows: 400px auto auto; }
+    #graph-area { grid-row: 1; border-right: none; border-bottom: 1px solid var(--border); }
+    .right-panel { grid-column: 1; grid-row: 2; height: 300px; }
+    .interp-panel { grid-column: 1; grid-row: 3; }
+    header { padding: 1.2rem 1.2rem 1rem; flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <h1>Bound</h1>
+    <div class="sub">WACHOWSKI SISTERS · 1996 · ANALIZA SIECI DIALOGOWEJ</div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat"><div class="val">12</div><div class="lbl">WĘZŁY</div></div>
+    <div class="hstat"><div class="val">16</div><div class="lbl">KRAWĘDZIE</div></div>
+    <div class="hstat"><div class="val">2</div><div class="lbl">SPOŁECZNOŚCI</div></div>
+  </div>
+</header>
+
+<div class="workspace">
+  <div id="graph-area">
+    <canvas id="graph-canvas"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--comm0)"></div>ŚWIAT CORKY</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--comm1)"></div>ŚWIAT MAFII</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--comm2)"></div>PERYFERIA</div>
+    </div>
+    <div class="graph-overlay">
+      <button class="mode-btn active" data-mode="default">SIEĆ</button>
+      <button class="mode-btn" data-mode="betweenness">POŚREDNICTWO</button>
+      <button class="mode-btn" data-mode="degree">STOPIEŃ</button>
+      <button class="mode-btn" data-mode="pagerank">PAGERANK</button>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="tabs">
+      <div class="tab active" data-tab="node">WĘZEŁ</div>
+      <div class="tab" data-tab="ranking">RANKING</div>
+      <div class="tab" data-tab="community">SPOŁECZNOŚCI</div>
+      <div class="tab" data-tab="bridges">MOSTY</div>
+    </div>
+    <div class="panel-content">
+
+      <div class="tab-pane active" id="tab-node">
+        <div id="default-hint">← KLIKNIJ WĘZEŁ<br>aby zobaczyć metryki</div>
+        <div id="node-card">
+          <div class="node-card-name" id="nc-name"></div>
+          <div id="nc-metrics"></div>
+          <div id="nc-comm"></div>
+          <div id="nc-bridge"></div>
+          <div id="nc-neighbors" style="margin-top:0.8rem;font-family:var(--font-mono);font-size:0.62rem;color:var(--muted);letter-spacing:0.08em;"></div>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="tab-ranking">
+        <div style="margin-bottom:0.6rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <button class="mode-btn active" data-rank="degree" style="font-size:0.58rem;padding:0.25rem 0.6rem;">STOPIEŃ</button>
+          <button class="mode-btn" data-rank="betweenness" style="font-size:0.58rem;padding:0.25rem 0.6rem;">POŚREDNICTWO</button>
+          <button class="mode-btn" data-rank="pagerank" style="font-size:0.58rem;padding:0.25rem 0.6rem;">PAGERANK</button>
+          <button class="mode-btn" data-rank="closeness" style="font-size:0.58rem;padding:0.25rem 0.6rem;">BLISKOŚĆ</button>
+        </div>
+        <table class="rank-table" id="rank-table">
+          <thead><tr><th>#</th><th>POSTAĆ</th><th style="text-align:right;">WARTOŚĆ</th></tr></thead>
+          <tbody id="rank-body"></tbody>
+        </table>
+      </div>
+
+      <div class="tab-pane" id="tab-community">
+        <div id="comm-content"></div>
+      </div>
+
+      <div class="tab-pane" id="tab-bridges">
+        <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);letter-spacing:0.1em;margin-bottom:0.8rem;">
+          KRAWĘDZIE ŁĄCZĄCE SPOŁECZNOŚCI
+        </div>
+        <div id="bridges-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="interp-panel">
+    <h2>Interpretacja humanistyczna</h2>
+    <p><strong>Violet</strong> jest bezsprzecznym centrum sieci — jej betweenness centrality (0.407) przewyższa wszystkich innych dwukrotnie. Stoi na przecięciu świata kryminału i świata intymnego: pośredniczy między Cezarem i jego bandą a Corky, tworząc kruchy most między dwiema ontologiami. Bez niej sieć dosłownie odpada na dwa niespójne kawałki.</p>
+    <p><strong>Corky</strong> — mimo mniejszego stopnia (53) — posiada równie wysoką miarę pośrednictwa co <em>Woman</em>, bowiem jest jedynym łącznikiem grupy peryferyjnej z centrum. Jej rola ex-więźniarki i hydrauliczki to nie przypadek: jest kimś, kto przenika zamknięte przestrzenie.</p>
+    <p><strong>Caesar</strong> ma najwyższy rawSize (40) i wysoki stopień (72), lecz jego betweenness (0.240) jest niższy niż Violet. To archetyp autorytetu lokalnego — dobrze połączony wewnątrz swojej frakcji, ale zależny od Violet w kontaktach ze światem zewnętrznym. Jego percepcja władzy jest złudna.</p>
+    <p><strong>Mosty strukturalne</strong>: krawędź <em>Corky–Violet</em> (waga 36) to najsilniejsze ogniwo sieci i zarazem jej najkrytyczniejszy most. Usunięcie tej krawędzi rozspójnia cały graf. Film dosłownie rozgrywa się na tej krawędzi — pożądanie jako mechanizm sieciowy.</p>
+    <p><strong>Peryferia</strong> (Bartender, Sue, Woman Cop) tworzą grupę o zerowym betweenness i niskim stopniu. Są dramaturgicznie funkcjonalne — świadkowie, alibi, tło — lecz sieciowo nieistotne. Ich istnienie podkreśla izolację głównego trójkąta.</p>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA — parsed from GEXF
+// ═══════════════════════════════════════════════
+const COMM_COLORS = ['#c42a52', '#3a7abf', '#4a9e6a'];
+const COMM_NAMES  = ['Świat Corky', 'Świat Mafii / Cezara', 'Peryferia'];
+const COMM_DESCS  = [
+  'Corky i jej sąsiedztwo — outsiderzy, były świat przestępczy, kobiety z marginesu systemu.',
+  'Caesar, Violet i gangsterska hierarchia — wewnętrzny krąg władzy, pieniądza i przemocy.',
+  'Postacie peryferyjne: barmanka, policjantki, kobieta z sąsiedztwa — świadkowie bez władzy.'
+];
+
+const rawNodes = [
+  {id:'CORKY',      label:'CORKY',      mod:0, betw:0.18182, rawSize:22.857, deg:53,  pos:{x:-124.8, y:295.8}},
+  {id:'VIOLET',     label:'VIOLET',     mod:1, betw:0.40657, rawSize:35.714, deg:90,  pos:{x:-444.6, y:185.6}},
+  {id:'CAESAR',     label:'CAESAR',     mod:1, betw:0.23990, rawSize:40.000, deg:72,  pos:{x:124.7,  y:151.6}},
+  {id:'MICKEY',     label:'MICKEY',     mod:1, betw:0.00000, rawSize:22.857, deg:22,  pos:{x:125.5,  y:-255.8}},
+  {id:'JOHNNIE',    label:'JOHNNIE',    mod:1, betw:0.00505, rawSize:27.143, deg:17,  pos:{x:205.2,  y:-143.4}},
+  {id:'COP #1',     label:'COP #1',     mod:1, betw:0.00000, rawSize:22.857, deg:9,   pos:{x:-260.8, y:-196.6}},
+  {id:'GINO',       label:'GINO',       mod:1, betw:0.00000, rawSize:22.857, deg:8,   pos:{x:333.1,  y:-20.1}},
+  {id:'WOMAN',      label:'WOMAN',      mod:0, betw:0.18182, rawSize:14.286, deg:7,   pos:{x:209.9,  y:406.2}},
+  {id:'COP #2',     label:'COP #2',     mod:1, betw:0.00000, rawSize:18.571, deg:5,   pos:{x:-29.9,  y:-289.0}},
+  {id:'BARTENDER',  label:'BARTENDER',  mod:2, betw:0.00000, rawSize:10.000, deg:4,   pos:{x:78.9,   y:578.4}},
+  {id:'SUE',        label:'SUE',        mod:2, betw:0.00000, rawSize:10.000, deg:4,   pos:{x:-123.1, y:592.9}},
+  {id:'WOMAN COP',  label:'WOMAN COP',  mod:2, betw:0.00000, rawSize:10.000, deg:4,   pos:{x:-266.0, y:434.6}},
+];
+
+const rawEdges = [
+  {s:'CORKY',   t:'VIOLET',   w:36},
+  {s:'CORKY',   t:'CAESAR',   w:12},
+  {s:'CORKY',   t:'WOMAN',    w:2},
+  {s:'VIOLET',  t:'CAESAR',   w:33},
+  {s:'VIOLET',  t:'MICKEY',   w:8},
+  {s:'VIOLET',  t:'JOHNNIE',  w:4},
+  {s:'VIOLET',  t:'COP #1',   w:4},
+  {s:'VIOLET',  t:'GINO',     w:2},
+  {s:'CAESAR',  t:'MICKEY',   w:11},
+  {s:'CAESAR',  t:'JOHNNIE',  w:7},
+  {s:'CAESAR',  t:'GINO',     w:3},
+  {s:'CAESAR',  t:'COP #1',   w:3},
+  {s:'CAESAR',  t:'COP #2',   w:2},
+  {s:'MICKEY',  t:'JOHNNIE',  w:3},
+  {s:'JOHNNIE', t:'GINO',     w:3},
+  {s:'COP #1',  t:'COP #2',   w:2},
+];
+
+// ═══════════════════════════════════════════════
+// COMPUTE METRICS
+// ═══════════════════════════════════════════════
+function computeMetrics(nodes, edges) {
+  const N = nodes.length;
+  const ids = nodes.map(n => n.id);
+  const idx = {};
+  ids.forEach((id, i) => idx[id] = i);
+
+  // Adjacency list (weighted)
+  const adj = {};
+  ids.forEach(id => adj[id] = []);
+  edges.forEach(e => {
+    adj[e.s].push({to: e.t, w: e.w});
+    adj[e.t].push({to: e.s, w: e.w});
+  });
+
+  // Degree (weighted sum) — use rawNodes deg
+  const degMap = {};
+  nodes.forEach(n => degMap[n.id] = n.deg);
+  const maxDeg = Math.max(...Object.values(degMap));
+
+  // Closeness (BFS unweighted)
+  function closeness(src) {
+    const dist = {}; ids.forEach(id => dist[id] = Infinity);
+    dist[src] = 0;
+    const q = [src];
+    while (q.length) {
+      const u = q.shift();
+      adj[u].forEach(({to}) => {
+        if (dist[to] === Infinity) { dist[to] = dist[u] + 1; q.push(to); }
+      });
+    }
+    const reachable = ids.filter(id => dist[id] < Infinity && id !== src);
+    if (reachable.length === 0) return 0;
+    const sumD = reachable.reduce((s, id) => s + dist[id], 0);
+    return reachable.length / sumD;
+  }
+  const closenessMap = {};
+  ids.forEach(id => closenessMap[id] = closeness(id));
+
+  // Betweenness — from rawNodes
+  const betwMap = {};
+  nodes.forEach(n => betwMap[n.id] = n.betw);
+
+  // PageRank
+  const alpha = 0.85; const iters = 50;
+  const pr = {}; ids.forEach(id => pr[id] = 1/N);
+  const outDeg = {}; ids.forEach(id => outDeg[id] = adj[id].length);
+  for (let it = 0; it < iters; it++) {
+    const np = {}; ids.forEach(id => np[id] = (1-alpha)/N);
+    ids.forEach(id => {
+      adj[id].forEach(({to}) => { np[to] += alpha * pr[id] / outDeg[id]; });
+    });
+    ids.forEach(id => pr[id] = np[id]);
+  }
+  const prMax = Math.max(...Object.values(pr));
+
+  // Clustering coefficient
+  function clustering(id) {
+    const nbrs = adj[id].map(e => e.to);
+    const k = nbrs.length;
+    if (k < 2) return 0;
+    let tri = 0;
+    for (let i=0; i<k; i++) {
+      for (let j=i+1; j<k; j++) {
+        if (adj[nbrs[i]].some(e => e.to === nbrs[j])) tri++;
+      }
+    }
+    return (2*tri) / (k*(k-1));
+  }
+  const clusterMap = {};
+  ids.forEach(id => clusterMap[id] = clustering(id));
+
+  return { degMap, maxDeg, closenessMap, betwMap, pr, prMax, clusterMap, adj };
+}
+
+const M = computeMetrics(rawNodes, rawEdges);
+
+// Detect inter-community edges (bridges)
+const bridges = rawEdges.filter(e => {
+  const sn = rawNodes.find(n => n.id === e.s);
+  const tn = rawNodes.find(n => n.id === e.t);
+  return sn.mod !== tn.mod;
+});
+
+// ═══════════════════════════════════════════════
+// CANVAS GRAPH
+// ═══════════════════════════════════════════════
+const canvas = document.getElementById('graph-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H;
+let currentMode = 'default';
+let selectedNode = null;
+let hoveredNode  = null;
+let dragging = false, dragNode = null;
+let panX = 0, panY = 0, lastMX = 0, lastMY = 0;
+let scale = 1;
+
+// Build node objects with canvas positions
+const nodeMap = {};
+rawNodes.forEach(n => { nodeMap[n.id] = n; });
+
+// Map gexf coords to canvas
+function gexfToCanvas(nodes) {
+  const xs = nodes.map(n => n.pos.x), ys = nodes.map(n => n.pos.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const rng = Math.max(maxX - minX, maxY - minY, 1);
+  nodes.forEach(n => {
+    n.cx0 = (n.pos.x - minX) / rng;
+    n.cy0 = (n.pos.y - minY) / rng;
+  });
+}
+gexfToCanvas(rawNodes);
+
+function resize() {
+  const area = document.getElementById('graph-area');
+  W = area.clientWidth; H = area.clientHeight;
+  canvas.width  = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  draw();
+}
+
+function nodePos(n) {
+  const pad = 80;
+  const usableW = W - pad*2, usableH = H - pad*2;
+  const base = Math.min(usableW, usableH);
+  return {
+    x: panX + W/2 + (n.cx0 - 0.5) * base * scale,
+    y: panY + H/2 + (n.cy0 - 0.5) * base * scale
+  };
+}
+
+function nodeRadius(n) {
+  const base = n.rawSize / 40;
+  if (currentMode === 'betweenness') return 8 + base * 22 + n.betw * 30;
+  if (currentMode === 'degree')      return 8 + (M.degMap[n.id] / M.maxDeg) * 30;
+  if (currentMode === 'pagerank')    return 8 + (M.pr[n.id] / M.prMax) * 28;
+  return 8 + base * 22;
+}
+
+function nodeColor(n, alpha = 1) {
+  const c = COMM_COLORS[n.mod] || '#888';
+  return c + (alpha < 1 ? Math.round(alpha*255).toString(16).padStart(2,'0') : '');
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background subtle radial
+  const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*0.7);
+  grad.addColorStop(0, 'rgba(28,20,26,0.6)');
+  grad.addColorStop(1, 'rgba(10,6,8,0.0)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+
+  // Edges
+  rawEdges.forEach(e => {
+    const sn = nodeMap[e.s], tn = nodeMap[e.t];
+    const sp = nodePos(sn), tp = nodePos(tn);
+    const isBridge = sn.mod !== tn.mod;
+    const isSelected = selectedNode && (e.s === selectedNode.id || e.t === selectedNode.id);
+    const maxW = Math.max(...rawEdges.map(x => x.w));
+    const lw = 0.5 + (e.w / maxW) * 4;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(sp.x, sp.y);
+    ctx.lineTo(tp.x, tp.y);
+    ctx.lineWidth = lw;
+
+    if (isBridge) {
+      ctx.strokeStyle = isSelected ? '#c8944a' : 'rgba(200,148,74,0.5)';
+      ctx.setLineDash([4, 4]);
+    } else {
+      if (selectedNode) {
+        ctx.strokeStyle = isSelected ? 'rgba(228,210,190,0.7)' : 'rgba(61,37,53,0.4)';
+      } else {
+        ctx.strokeStyle = 'rgba(120,80,100,0.35)';
+      }
+      ctx.setLineDash([]);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Weight label on selected edges
+    if (isSelected && selectedNode) {
+      const mx = (sp.x + tp.x)/2, my = (sp.y + tp.y)/2;
+      ctx.fillStyle = 'rgba(200,148,74,0.9)';
+      ctx.font = `${Math.round(9 * devicePixelRatio / devicePixelRatio)}px 'Share Tech Mono'`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(e.w, mx, my - 6);
+    }
+  });
+
+  // Nodes
+  rawNodes.forEach(n => {
+    const p = nodePos(n);
+    const r = nodeRadius(n);
+    const isSelected = selectedNode && selectedNode.id === n.id;
+    const isHovered  = hoveredNode  && hoveredNode.id  === n.id;
+    const dimmed = selectedNode && !isSelected && !rawEdges.some(e =>
+      (e.s === selectedNode.id && e.t === n.id) ||
+      (e.t === selectedNode.id && e.s === n.id)
+    );
+
+    ctx.save();
+
+    // Glow for selected
+    if (isSelected || isHovered) {
+      ctx.shadowColor = nodeColor(n);
+      ctx.shadowBlur  = isSelected ? 22 : 10;
+    }
+
+    // Fill
+    const alpha = dimmed ? 0.2 : 1;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+    const col = nodeColor(n);
+    ctx.fillStyle = col; // Usunięto gradient na rzecz jednolitego, płaskiego koloru
+    ctx.globalAlpha = alpha;
+    ctx.fill();
+
+    // Border
+    ctx.strokeStyle = isSelected ? '#e8ddd0' : (col + 'aa');
+    ctx.lineWidth = isSelected ? 2 : 1;
+    ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // Label
+    ctx.save();
+    ctx.globalAlpha = dimmed ? 0.2 : 1;
+    ctx.fillStyle = isSelected ? '#e8ddd0' : 'rgba(232,221,208,0.85)';
+    const fs = Math.max(9, Math.min(12, r * 0.65));
+    ctx.font = `${isSelected ? '600 ' : ''}${fs}px 'Share Tech Mono'`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const lx = p.x, ly = p.y + r + fs * 0.8;
+    ctx.fillText(n.label, lx, ly);
+    ctx.restore();
+  });
+}
+
+// ═══════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════
+function hitTest(mx, my) {
+  for (let i = rawNodes.length-1; i >= 0; i--) {
+    const n = rawNodes[i];
+    const p = nodePos(n);
+    const r = nodeRadius(n) + 4;
+    if ((mx-p.x)**2 + (my-p.y)**2 <= r*r) return n;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  if (dragging && dragNode) {
+    const base = Math.min(W-160, H-160);
+    dragNode.cx0 += (e.movementX) / (base * scale);
+    dragNode.cy0 += (e.movementY) / (base * scale);
+    draw(); return;
+  }
+  if (dragging && !dragNode) {
+    panX += e.movementX; panY += e.movementY;
+    draw(); return;
+  }
+  const hit = hitTest(mx, my);
+  hoveredNode = hit;
+  canvas.style.cursor = hit ? 'pointer' : 'grab';
+  const tip = document.getElementById('tooltip');
+  if (hit) {
+    tip.style.display = 'block';
+    tip.style.left = (e.clientX + 14) + 'px';
+    tip.style.top  = (e.clientY - 10) + 'px';
+    tip.textContent = `${hit.label}  |  deg:${M.degMap[hit.id]}  pr:${M.pr[hit.id].toFixed(4)}`;
+  } else {
+    tip.style.display = 'none';
+  }
+  draw();
+});
+
+canvas.addEventListener('mousedown', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  dragging = true;
+  dragNode = (e.altKey || e.metaKey) ? hitTest(mx, my) : null;
+  lastMX = e.clientX; lastMY = e.clientY;
+});
+
+canvas.addEventListener('mouseup', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const moved = Math.abs(e.clientX - lastMX) + Math.abs(e.clientY - lastMY) < 5;
+  if (moved && !dragNode) {
+    const hit = hitTest(mx, my);
+    selectedNode = (hit && hit !== selectedNode) ? hit : null;
+    if (selectedNode) showNodeCard(selectedNode);
+    else {
+      document.getElementById('default-hint').style.display = 'block';
+      document.getElementById('node-card').classList.remove('visible');
+    }
+    // Switch to node tab
+    if (selectedNode) switchTab('node');
+  }
+  dragging = false; dragNode = null;
+  draw();
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY > 0 ? 0.9 : 1.1;
+  scale = Math.max(0.3, Math.min(4, scale * factor));
+  draw();
+}, {passive: false});
+
+canvas.addEventListener('mouseleave', () => {
+  hoveredNode = null;
+  document.getElementById('tooltip').style.display = 'none';
+  dragging = false; dragNode = null;
+  draw();
+});
+
+// ═══════════════════════════════════════════════
+// NODE CARD
+// ═══════════════════════════════════════════════
+function fmt(v, d=4) { return typeof v === 'number' ? v.toFixed(d) : v; }
+
+function showNodeCard(n) {
+  document.getElementById('default-hint').style.display = 'none';
+  document.getElementById('node-card').classList.add('visible');
+  document.getElementById('nc-name').textContent = n.label;
+  document.getElementById('nc-name').style.color = nodeColor(n);
+
+  const metrics = [
+    {k:'DEGREE (WAŻONY)', v: M.degMap[n.id]},
+    {k:'BETWEENNESS',     v: fmt(M.betwMap[n.id])},
+    {k:'CLOSENESS',       v: fmt(M.closenessMap[n.id])},
+    {k:'PAGERANK',        v: fmt(M.pr[n.id])},
+    {k:'CLUSTERING',      v: fmt(M.clusterMap[n.id])},
+    {k:'RAW SIZE',        v: fmt(n.rawSize, 2)},
+  ];
+  document.getElementById('nc-metrics').innerHTML = metrics.map(m =>
+    `<div class="metric-row"><span class="mk">${m.k}</span><span class="mv">${m.v}</span></div>`
+  ).join('');
+
+  const commColor = COMM_COLORS[n.mod];
+  document.getElementById('nc-comm').innerHTML = `
+    <span class="comm-badge" style="background:${commColor}22;border:1px solid ${commColor}66;color:${commColor};">
+      ${COMM_NAMES[n.mod]}
+    </span>`;
+
+  const isBridgeNode = bridges.some(e => e.s === n.id || e.t === n.id);
+  document.getElementById('nc-bridge').innerHTML = isBridgeNode
+    ? `<div class="bridge-tag">WĘZEŁ MOSTOWY — łączy społeczności</div>` : '';
+
+  const nbrs = M.adj[n.id].map(e => e.to).join(', ');
+  document.getElementById('nc-neighbors').textContent = `SĄSIEDZI: ${nbrs}`;
+}
+
+// ═══════════════════════════════════════════════
+// RANKING TABLE
+// ═══════════════════════════════════════════════
+let currentRank = 'degree';
+function buildRank(metric) {
+  currentRank = metric;
+  const rows = rawNodes.map(n => {
+    let v;
+    if (metric === 'degree')      v = M.degMap[n.id];
+    if (metric === 'betweenness') v = M.betwMap[n.id];
+    if (metric === 'pagerank')    v = M.pr[n.id];
+    if (metric === 'closeness')   v = M.closenessMap[n.id];
+    return {n, v};
+  }).sort((a,b) => b.v - a.v);
+
+  const maxV = rows[0].v;
+  const tbody = document.getElementById('rank-body');
+  tbody.innerHTML = rows.map(({n, v}, i) => {
+    const pct = maxV > 0 ? (v/maxV*100).toFixed(1) : 0;
+    const col = COMM_COLORS[n.mod];
+    return `<tr onclick="selectNodeById('${n.id}')">
+      <td><span class="rank-num">${i+1}</span></td>
+      <td class="name bar-cell" style="position:relative;">
+        <div class="bar-fill" style="width:${pct}%;background:${col};"></div>
+        <span class="bar-text" style="color:${col};">${n.label}</span>
+      </td>
+      <td class="val">${metric === 'degree' ? v : v.toFixed(4)}</td>
+    </tr>`;
+  }).join('');
+}
+buildRank('degree');
+
+document.querySelectorAll('[data-rank]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-rank]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildRank(btn.dataset.rank);
+  });
+});
+
+// ═══════════════════════════════════════════════
+// COMMUNITY PANEL
+// ═══════════════════════════════════════════════
+function buildCommunity() {
+  const div = document.getElementById('comm-content');
+  const groups = [0,1,2];
+  div.innerHTML = groups.map(g => {
+    const members = rawNodes.filter(n => n.mod === g);
+    const col = COMM_COLORS[g];
+    return `<div class="comm-section">
+      <div class="comm-header">
+        <div class="comm-color" style="background:${col};"></div>
+        <div class="comm-name" style="color:${col};">${COMM_NAMES[g]}</div>
+        <div class="comm-size">${members.length} osób</div>
+      </div>
+      <div class="comm-members">
+        ${members.map(n =>
+          `<span class="comm-pill" style="border-color:${col}55;color:${col};"
+            onclick="selectNodeById('${n.id}')">${n.label}</span>`
+        ).join('')}
+      </div>
+      <div class="comm-desc">${COMM_DESCS[g]}</div>
+    </div>`;
+  }).join('');
+}
+buildCommunity();
+
+// ═══════════════════════════════════════════════
+// BRIDGES PANEL
+// ═══════════════════════════════════════════════
+function buildBridges() {
+  const div = document.getElementById('bridges-content');
+  const sorted = [...bridges].sort((a,b) => b.w - a.w);
+  div.innerHTML = sorted.map(e => {
+    const sn = nodeMap[e.s], tn = nodeMap[e.t];
+    return `<div class="bridge-item" onclick="highlightEdge('${e.s}','${e.t}')" style="cursor:pointer;">
+      <div>
+        <span style="color:${COMM_COLORS[sn.mod]}">${e.s}</span>
+        <span style="color:var(--muted)"> — </span>
+        <span style="color:${COMM_COLORS[tn.mod]}">${e.t}</span>
+        <div class="bridge-cross">${COMM_NAMES[sn.mod]} × ${COMM_NAMES[tn.mod]}</div>
+      </div>
+      <div class="bridge-weight">w=${e.w}</div>
+    </div>`;
+  }).join('');
+}
+buildBridges();
+
+function highlightEdge(s, t) {
+  selectedNode = nodeMap[s];
+  showNodeCard(selectedNode);
+  switchTab('node');
+  draw();
+}
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-'+name));
+}
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => switchTab(t.dataset.tab));
+});
+
+// ═══════════════════════════════════════════════
+// MODE BUTTONS
+// ═══════════════════════════════════════════════
+document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    draw();
+  });
+});
+
+// ═══════════════════════════════════════════════
+// SELECT BY ID (from rank/community tables)
+// ═══════════════════════════════════════════════
+function selectNodeById(id) {
+  selectedNode = nodeMap[id];
+  showNodeCard(selectedNode);
+  switchTab('node');
+  draw();
+}
+window.selectNodeById = selectNodeById;
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>
