@@ -1,0 +1,130 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d1" for="edge" attr.name="weight" attr.type="long"/>
+<key id="d0" for="node" attr.name="label" attr.type="string"/>
+<graph edgedefault="undirected"><node id="CORKY">
+  <data key="d0">CORKY</data>
+</node>
+<node id="VIOLET">
+  <data key="d0">VIOLET</data>
+</node>
+<node id="CAESAR">
+  <data key="d0">CAESAR</data>
+</node>
+<node id="MICKEY">
+  <data key="d0">MICKEY</data>
+</node>
+<node id="JOHNNIE">
+  <data key="d0">JOHNNIE</data>
+</node>
+<node id="COP #1">
+  <data key="d0">COP #1</data>
+</node>
+<node id="GINO">
+  <data key="d0">GINO</data>
+</node>
+<node id="WOMAN">
+  <data key="d0">WOMAN</data>
+</node>
+<node id="COP #2">
+  <data key="d0">COP #2</data>
+</node>
+<node id="BARTENDER">
+  <data key="d0">BARTENDER</data>
+</node>
+<node id="SUE">
+  <data key="d0">SUE</data>
+</node>
+<node id="WOMAN COP">
+  <data key="d0">WOMAN COP</data>
+</node>
+<node id="SHELLY">
+  <data key="d0">SHELLY</data>
+</node>
+<edge source="CORKY" target="VIOLET">
+  <data key="d1">36</data>
+</edge>
+<edge source="CORKY" target="CAESAR">
+  <data key="d1">12</data>
+</edge>
+<edge source="CORKY" target="WOMAN">
+  <data key="d1">2</data>
+</edge>
+<edge source="CORKY" target="BARTENDER">
+  <data key="d1">1</data>
+</edge>
+<edge source="CORKY" target="SUE">
+  <data key="d1">1</data>
+</edge>
+<edge source="CORKY" target="WOMAN COP">
+  <data key="d1">1</data>
+</edge>
+<edge source="VIOLET" target="CAESAR">
+  <data key="d1">33</data>
+</edge>
+<edge source="VIOLET" target="MICKEY">
+  <data key="d1">8</data>
+</edge>
+<edge source="VIOLET" target="JOHNNIE">
+  <data key="d1">4</data>
+</edge>
+<edge source="VIOLET" target="COP #1">
+  <data key="d1">4</data>
+</edge>
+<edge source="VIOLET" target="GINO">
+  <data key="d1">2</data>
+</edge>
+<edge source="VIOLET" target="WOMAN">
+  <data key="d1">1</data>
+</edge>
+<edge source="VIOLET" target="SHELLY">
+  <data key="d1">1</data>
+</edge>
+<edge source="VIOLET" target="COP #2">
+  <data key="d1">1</data>
+</edge>
+<edge source="CAESAR" target="MICKEY">
+  <data key="d1">11</data>
+</edge>
+<edge source="CAESAR" target="JOHNNIE">
+  <data key="d1">7</data>
+</edge>
+<edge source="CAESAR" target="GINO">
+  <data key="d1">3</data>
+</edge>
+<edge source="CAESAR" target="COP #1">
+  <data key="d1">3</data>
+</edge>
+<edge source="CAESAR" target="COP #2">
+  <data key="d1">2</data>
+</edge>
+<edge source="CAESAR" target="WOMAN">
+  <data key="d1">1</data>
+</edge>
+<edge source="MICKEY" target="JOHNNIE">
+  <data key="d1">3</data>
+</edge>
+<edge source="JOHNNIE" target="GINO">
+  <data key="d1">3</data>
+</edge>
+<edge source="COP #1" target="COP #2">
+  <data key="d1">2</data>
+</edge>
+<edge source="WOMAN" target="BARTENDER">
+  <data key="d1">1</data>
+</edge>
+<edge source="WOMAN" target="SUE">
+  <data key="d1">1</data>
+</edge>
+<edge source="WOMAN" target="WOMAN COP">
+  <data key="d1">1</data>
+</edge>
+<edge source="BARTENDER" target="SUE">
+  <data key="d1">1</data>
+</edge>
+<edge source="BARTENDER" target="WOMAN COP">
+  <data key="d1">1</data>
+</edge>
+<edge source="SUE" target="WOMAN COP">
+  <data key="d1">1</data>
+</edge>
+</graph></graphml>
